@@ -1,0 +1,6 @@
+dependencies:
+  idf: ">=6.0"
+  usb: ">=1.6.0"
+  kilrah/esp_usb_host_floppy:
+    version: "*"
+    override_path: "../../../"

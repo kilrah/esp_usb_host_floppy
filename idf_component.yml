@@ -1,0 +1,32 @@
+version: "0.1.0"
+description: USB Host driver for USB floppy disk drives (UFI over CBI, CB or Bulk-Only) - sector access, geometry, write protection, disk change, low-level format, FAT12 via FatFs/VFS
+url: https://github.com/kilrah/esp_usb_host_floppy
+repository: https://github.com/kilrah/esp_usb_host_floppy.git
+issues: https://github.com/kilrah/esp_usb_host_floppy/issues
+license: Apache-2.0
+maintainers:
+  - Andre Bernet
+tags:
+  - usb
+  - usb_host
+  - floppy
+  - ufi
+  - mass_storage
+  - fat12
+targets:
+  - esp32s2
+  - esp32s3
+  - esp32p4
+  - esp32s31
+dependencies:
+  idf: ">=6.0"
+  usb:
+    version: "^1.0.0"
+    public: true
+files:
+  exclude:
+    - "examples/**/build/**"
+    - "examples/**/managed_components/**"
+    - "examples/**/sdkconfig"
+    - "examples/**/sdkconfig.old"
+    - "examples/**/dependencies.lock"

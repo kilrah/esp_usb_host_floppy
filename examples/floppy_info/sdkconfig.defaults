@@ -1,0 +1,5 @@
+# Drives are often connected through a hub
+CONFIG_USB_HOST_HUBS_SUPPORTED=y
+# Long file names
+CONFIG_FATFS_LFN_HEAP=y
+CONFIG_FATFS_API_ENCODING_UTF_8=y

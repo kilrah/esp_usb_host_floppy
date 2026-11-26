@@ -1,0 +1,26 @@
+menu "Floppy example"
+
+    config EXAMPLE_FORCE_FULL_SPEED
+        bool "Run the high-speed USB port at full speed only"
+        depends on SOC_USB_UTMI_PHY_NUM > 0
+        default y
+        help
+            USB floppy drives are full-speed devices. Behind a high-speed hub they need the hub's Transaction
+            Translator, which the ESP USB Host Library doesn't support: the drive is not enumerated ("transaction
+            translator (TT) is not supported"). Running the port at full speed makes the hub work at full speed too,
+            so the drive behind it is reachable. Not needed when the drive is plugged in directly.
+
+    config EXAMPLE_WRITE_TEST
+        bool "Write a test file to the disk"
+        default n
+        help
+            Writes ESPTEST.TXT to the root directory, reads it back and compares.
+
+    config EXAMPLE_FORMAT
+        bool "Format the disk (erases it!)"
+        default n
+        help
+            Low-level formats the disk to its largest format, with verify, then creates an empty FAT12 file system
+            labelled ESP-FLOPPY. Everything on the disk is lost.
+
+endmenu
