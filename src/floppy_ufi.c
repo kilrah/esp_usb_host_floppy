@@ -281,8 +281,14 @@ esp_err_t floppy_host_read_format_capacities(floppy_host_device_handle_t handle,
     uint8_t cdb[12] = {UFI_READ_FORMAT_CAPACITIES};
     size_t len = 0;
     put_be16(&cdb[7], 12);
-    ESP_RETURN_ON_ERROR(run_cmd(handle, cdb, sizeof(cdb), resp, 12, true, FLOPPY_TIMEOUT_DEFAULT_MS, &len),
-                        TAG, "READ FORMAT CAPACITIES header");
+    esp_err_t err = run_cmd(handle, cdb, sizeof(cdb), resp, 12, true, FLOPPY_TIMEOUT_DEFAULT_MS, &len);
+    if (err != ESP_OK) {
+        /* A disk change is reported once, on the first command after it: expected when polling for a disk */
+        if (err != ESP_ERR_FLOPPY_MEDIUM_CHANGED && err != ESP_ERR_FLOPPY_NO_MEDIUM) {
+            ESP_LOGE(TAG, "READ FORMAT CAPACITIES header: %s", floppy_err_to_name(err));
+        }
+        return err;
+    }
     ESP_RETURN_ON_FALSE(len >= 12 && resp[3] >= 8, ESP_ERR_INVALID_RESPONSE, TAG,
                         "READ FORMAT CAPACITIES too short (%u bytes, list %u)", (unsigned)len, resp[3]);
     size_t want = MIN((size_t)4 + (resp[3] & ~7), sizeof(resp));

@@ -1,4 +1,4 @@
-version: "0.1.0"
+version: "0.1.1"
 description: USB Host driver for USB floppy disk drives (UFI over CBI, CB or Bulk-Only) - sector access, geometry, write protection, disk change, low-level format, FAT12 via FatFs/VFS
 url: https://github.com/kilrah/esp_usb_host_floppy
 repository: https://github.com/kilrah/esp_usb_host_floppy.git

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.1 - 2026-11-26
+
+- `floppy_host_read_format_capacities()` no longer logs an error when the drive reports a disk change or no disk:
+  the first command after a disk goes in always gets the disk change, so polling an empty drive with it logged an
+  error every time a disk was inserted.
+- `floppy_fs_mount()` documentation: the cache is write-back (writes reach the disk when FatFs syncs, e.g. at
+  `fclose()`), not write-through.
+
 ## 0.1.0 - 2026-11-26
 
 First version.

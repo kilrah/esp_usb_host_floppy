@@ -42,8 +42,10 @@ typedef struct {
  * @brief Mount the FAT file system of the disk in the drive and register it with the VFS under base_path.
  *
  * Read-write, through the standard C library (fopen, fread, fwrite, opendir, stat, rename, unlink, mkdir...).
- * Writes go straight to the disk (the cache is write-through), so nothing is lost when the disk is removed
- * after fclose(). Long file names need CONFIG_FATFS_LFN_HEAP or CONFIG_FATFS_LFN_STACK.
+ * Writes are kept in the cylinder cache (write-back) and reach the disk when FatFs syncs: at the end of every
+ * fclose(), fsync(), mkdir(), rename(), unlink()..., when a cache slot is reused, and on unmount. So nothing is lost
+ * when the disk is removed after fclose(); changes not yet synced are lost (an error is logged). Long file names
+ * need CONFIG_FATFS_LFN_HEAP or CONFIG_FATFS_LFN_STACK.
  *
  * The disk may be swapped while mounted: the change is detected (sense 06/28, or polling at most once per second),
  * open files of the old disk become invalid (EBADF / EIO) and the new disk is mounted at the next access.
