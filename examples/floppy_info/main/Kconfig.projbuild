@@ -2,7 +2,7 @@ menu "Floppy example"
 
     config EXAMPLE_FORCE_FULL_SPEED
         bool "Run the high-speed USB port at full speed only"
-        depends on SOC_USB_UTMI_PHY_NUM > 0
+        depends on IDF_TARGET_ESP32P4 || IDF_TARGET_ESP32S31 # targets with a high-speed USB port
         default y
         help
             USB floppy drives are full-speed devices. Behind a high-speed hub they need the hub's Transaction

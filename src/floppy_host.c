@@ -442,7 +442,10 @@ static esp_err_t read_interrupt(floppy_device_t *dev, uint8_t status[2], uint32_
 {
     usb_transfer_t *xfer = dev->intr_xfer;
     xfer->bEndpointAddress = dev->ep_intr;
-    xfer->num_bytes = xfer->data_buffer_size; /* a multiple of the MPS, as interrupt IN needs */
+    /* One packet: 2 bytes rounded up to the MPS, as interrupt IN needs. Not data_buffer_size: the library rounds
+     * buffers up to the cache line (64 bytes on the ESP32-P4), and a 2-byte packet with MPS 2 is not short, so a
+     * 64-byte transfer would wait for 31 more packets that never come. */
+    xfer->num_bytes = usb_round_up_to_mps(2, dev->mps_intr);
     xfer->timeout_ms = timeout_ms;
     esp_err_t err = status_to_err(submit_and_wait(dev, xfer, false));
     if (err == ESP_OK && xfer->actual_num_bytes < 2) {

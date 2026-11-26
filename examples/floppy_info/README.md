@@ -31,7 +31,6 @@ Example output (TEAC FD-05PUB, 1.44 MB disk, ESP32-P4):
 
 ```
 I (2335) floppy_info: Drive: TEAC FD-05PUB (rev 1026), VID 0x0644 PID 0x0000, CBI
-W (4345) floppy_host: No command completion interrupt: using CB transport (status by REQUEST SENSE)
 I (4355) floppy_info: Disk: formatted
 I (4365) floppy_info:   current:   2880 x  512 =    1440 KB  (80 cyl, 2 heads, 18 sectors)
 I (4365) floppy_info:   can format:   2880 x  512 =    1440 KB  (80 cyl, 2 heads, 18 sectors)

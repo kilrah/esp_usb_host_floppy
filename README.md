@@ -8,8 +8,8 @@ On top of sector access it gives what's floppy-specific: the formattable capacit
 disk change detection, low-level formatting, and a FAT12 file system through ESP-IDF FatFs and the VFS, with a
 cylinder cache that makes it reasonably fast.
 
-It requires ESP-IDF >= 6.0 and the `espressif/usb` component. Tested on an ESP32-P4 with a TEAC FD-05PUB
-(see [Tested hardware](#tested-hardware)).
+It requires ESP-IDF >= 6.0 and the `espressif/usb` component. Tested on ESP32-P4 and ESP32-S3 with three
+drives (see [Tested hardware](#tested-hardware)).
 
 ## Installation
 
@@ -116,18 +116,22 @@ and the new disk is mounted at the next access. Unwritten changes are lost if th
   `floppy_host_driver_config_t.accept_scsi_devices`, Bulk-Only devices with subclass 0x05/0x06 that report a
   removable direct access device are accepted too (off by default: it matches card readers and USB sticks).
   Command blocks are padded to 12 bytes.
-- **CBI without interrupts:** some drives declare CBI but don't send the command completion interrupt. UFI leaves
-  the interrupt undefined for INQUIRY and REQUEST SENSE: if none comes for those, the driver stops waiting for it
-  there only. If no interrupt ever comes for other commands either, it falls back to CB (status by REQUEST SENSE),
-  which Linux forces for the TEAC FD-05PUB with an `unusual_devs` entry. Each probe costs up to 1 s, once, at
-  install.
+- **The CBI interrupt transfer is exactly one packet** (2 bytes rounded up to the endpoint's MPS), not the size of
+  the transfer buffer: the USB Host Library rounds buffers up to the cache line (64 bytes on the ESP32-P4), and the
+  2-byte status is a full packet with MPS 2, so a 64-byte transfer never completes. Before this was fixed, all
+  three drives looked like they sent no interrupt on the P4, and worked on the S3.
+- **CBI without interrupts:** some drives declare CBI but don't send the command completion interrupt (Linux forces
+  CB for some TEAC FD-05PUB revisions with an `unusual_devs` entry). UFI leaves the interrupt undefined for INQUIRY
+  and REQUEST SENSE: if none comes for those, the driver stops waiting for it there only. If no interrupt comes for
+  the first other command either, it falls back to CB (status by REQUEST SENSE). Each probe costs up to 1 s, once.
 - **CB status is read too early for writes:** the REQUEST SENSE right after a WRITE's data stage arrives while the
-  drive is still waiting for the sector to come around. The TEAC answers 02/04/FF (02/04/04 for FORMAT UNIT); a
-  next command then fails with 0B/4E (overlapped commands). The driver polls REQUEST SENSE every 10 ms while it
-  says "in progress", up to the command timeout.
-- **CB drives stall the command block to reject a command** (e.g. TEST UNIT READY without a disk). The USB Host
-  Library clears EP0 stalls itself, but logs each one from its ISR as `E USBH: Dev n EP 0 STALL`, which per-tag log
-  levels don't filter. It's harmless: expect one per poll while the drive is empty.
+  drive is still waiting for the sector to come around. In CB mode the TEAC answers 02/04/FF (02/04/04 for FORMAT
+  UNIT); a next command then fails with 0B/4E (overlapped commands). The driver polls REQUEST SENSE every 10 ms
+  while it says "in progress", up to the command timeout. With CBI the interrupt only comes at the end.
+- **Drives stall the command block to reject a command** (e.g. TEST UNIT READY without a disk, or the first command
+  after a disk change). The USB Host Library clears EP0 stalls itself, but logs each one from its ISR as
+  `E USBH: Dev n EP 0 STALL`, which per-tag log levels don't filter. It's harmless: expect one per poll while the
+  drive is empty.
 - **Cylinder cache:** the drive caches nothing; every command waits for its first sector to come around (300 rpm:
   200 ms per revolution). Measured with the TEAC and a 1.44 MB disk:
 
@@ -165,19 +169,25 @@ and the new disk is mounted at the next access. Unwritten changes are lost if th
 
 | Drive | Transport | Notes |
 |---|---|---|
-| TEAC FD-05PUB (0644:0000, rev 1026) | declares CBI, used as CB | No command completion interrupt at all. Formats 1.44 MB, 1.25 MB (1232 x 1024) and 1.2 MB |
-| Y-E Data USB-FDU (057b:0000, bcdDevice 6.00, rev 6.01) | declares CBI, used as CB | Same as the TEAC: no interrupt although its endpoint is polled every 16 ms, same formats. Read 27 KB/s, write test OK. Reads a disk formatted by `floppy_fs_mkfs()` and then written on a PC |
-| NEC USB UF000x (0409:0040, rev 1.50) | declares CBI, used as CB | Same again; bulk endpoints numbered differently (IN 0x82, OUT 0x01). Read 23 KB/s, write test OK |
+| TEAC FD-05PUB (0644:0000, rev 1026) | CBI | Formats 1.44 MB, 1.25 MB (1232 x 1024) and 1.2 MB. Also tested as CB (see above) |
+| Y-E Data USB-FDU (057b:0000, bcdDevice 6.00, rev 6.01) | CBI | Same formats. Read 27 KB/s, write test OK. Reads a disk formatted by `floppy_fs_mkfs()` and then written on a PC |
+| NEC USB UF000x (0409:0040, rev 1.50) | CBI | Bulk endpoints numbered differently (IN 0x82, OUT 0x01). Read 23 KB/s, write test OK |
 
-Tested on an ESP32-P4 (rev 1.0) through a WCH 1a86:8091 hub with the high-speed port forced to full speed: reading,
-writing (files, directories, long names, rename, delete), write protection, disk removal and change, low-level
-format with verify (128 s for 1.44 MB) and mkfs. Should work on ESP32-S2/S3 (full-speed OTG, no forcing needed) and
-ESP32-S31; untested.
+The Y-E Data and NEC were tested as CB only (before the interrupt transfer fix); they declare CBI like the TEAC.
+
+Tested on:
+
+- ESP32-P4 rev 1.0, through the board's WCH 1a86:8091 hub, high-speed port forced to full speed: reading, writing
+  (files, directories, long names, rename, delete), write protection, disk removal and change, low-level format with
+  verify (128 s for 1.44 MB) and mkfs, all as CB.
+- ESP32-P4 rev 3.2, TEAC plugged in directly, with and without the forcing: CBI with interrupts, reading and writing.
+- ESP32-S3 (full-speed OTG), TEAC plugged in directly: CBI with interrupts, reading and writing.
 
 ## Limitations / TODO
 
 - Single LUN (LUN 0) only.
-- Bulk-Only UFI drives and drives that do send CBI interrupts are implemented but untested (no such drive here).
+- Bulk-Only UFI drives are implemented but untested (no such drive here).
+- With CBI: formatting and disk changes were tested as CB only.
 - A disk swapped while the file system stays mounted is handled (re-mount at the next access), but the example
   unmounts on removal, so that path was not exercised on hardware.
 - mkfs only for the standard floppy formats; no FAT16/FAT32 creation.
