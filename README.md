@@ -183,15 +183,17 @@ Tested on:
   verify (128 s for 1.44 MB) and mkfs, all as CB; then, after the interrupt fix, the TEAC as CBI: reading and
   writing, 10 boots and 4 power cycles.
 - ESP32-P4 rev 3.2, TEAC plugged in directly, with and without the forcing: CBI with interrupts, reading and writing.
-- ESP32-S3 (full-speed OTG), TEAC plugged in directly: CBI with interrupts, reading and writing.
+- ESP32-S3 (full-speed OTG), drives plugged in directly, CBI with interrupts: reading and writing with all three,
+  and with the NEC a low-level format with verify (132 s) and mkfs, and disk changes while the file system stays
+  mounted: removal (the next calls fail with `ENODEV`), re-insertion (re-mounted at the next access),
+  write-protected disk (writes fail with `EACCES`), and a different disk (its own label, files and free space).
+  A disk pulled out during a write: the drive reported a write fault (03/03/00) and that update was lost, as
+  expected; the volume was consistent afterwards.
 
 ## Limitations / TODO
 
 - Single LUN (LUN 0) only.
 - Bulk-Only UFI drives are implemented but untested (no such drive here).
-- With CBI: formatting and disk changes were tested as CB only.
-- A disk swapped while the file system stays mounted is handled (re-mount at the next access), but the example
-  unmounts on removal, so that path was not exercised on hardware.
 - mkfs only for the standard floppy formats; no FAT16/FAT32 creation.
 - Formatting 720 KB disks: the TEAC listed no 720 KB format for an HD disk (as expected), so not tested.
 - No support for suspend/resume events.

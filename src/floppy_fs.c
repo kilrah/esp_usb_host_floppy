@@ -743,9 +743,23 @@ esp_err_t floppy_fs_get_info(floppy_fs_handle_t fs, floppy_fs_info_t *info)
 {
     ESP_RETURN_ON_FALSE(fs && info, ESP_ERR_INVALID_ARG, TAG, "");
     memset(info, 0, sizeof(*info));
-    /* Through FatFs first: it re-mounts after a disk change */
-    ESP_RETURN_ON_ERROR(esp_vfs_fat_info(fs->base_path, &info->total_bytes, &info->free_bytes), TAG, "free space");
-    info->fat_type = fs->fatfs->fs_type == FS_FAT12 ? 12 : fs->fatfs->fs_type == FS_FAT16 ? 16 : 32;
+    /* Through FatFs first: it re-mounts after a disk change. f_getfree() rather than esp_vfs_fat_info(), which logs
+     * an error when there is no disk, a normal condition here. */
+    char drv[3] = {(char)('0' + fs->pdrv), ':', 0};
+    DWORD free_clusters = 0;
+    FATFS *fatfs = NULL;
+    FRESULT res = f_getfree(drv, &free_clusters, &fatfs);
+    if (res != FR_OK) {
+        return fresult_to_err(fs, res);
+    }
+#if FF_MAX_SS != FF_MIN_SS
+    uint64_t cluster_bytes = (uint64_t)fatfs->csize * fatfs->ssize;
+#else
+    uint64_t cluster_bytes = (uint64_t)fatfs->csize * FF_MAX_SS;
+#endif
+    info->total_bytes = (uint64_t)(fatfs->n_fatent - 2) * cluster_bytes;
+    info->free_bytes = (uint64_t)free_clusters * cluster_bytes;
+    info->fat_type = fatfs->fs_type == FS_FAT12 ? 12 : fatfs->fs_type == FS_FAT16 ? 16 : 32;
 
     xSemaphoreTake(fs->lock, portMAX_DELAY);
     info->media = fs->media;
