@@ -179,7 +179,8 @@ Tested on:
 
 - ESP32-P4 rev 1.0, through the board's WCH 1a86:8091 hub, high-speed port forced to full speed: reading, writing
   (files, directories, long names, rename, delete), write protection, disk removal and change, low-level format with
-  verify (128 s for 1.44 MB) and mkfs, all as CB.
+  verify (128 s for 1.44 MB) and mkfs, all as CB; then, after the interrupt fix, the TEAC as CBI: reading and
+  writing, 10 boots and 4 power cycles.
 - ESP32-P4 rev 3.2, TEAC plugged in directly, with and without the forcing: CBI with interrupts, reading and writing.
 - ESP32-S3 (full-speed OTG), TEAC plugged in directly: CBI with interrupts, reading and writing.
 
