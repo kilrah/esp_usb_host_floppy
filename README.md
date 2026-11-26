@@ -173,7 +173,8 @@ and the new disk is mounted at the next access. Unwritten changes are lost if th
 | Y-E Data USB-FDU (057b:0000, bcdDevice 6.00, rev 6.01) | CBI | Same formats. Read 27 KB/s, write test OK. Reads a disk formatted by `floppy_fs_mkfs()` and then written on a PC |
 | NEC USB UF000x (0409:0040, rev 1.50) | CBI | Bulk endpoints numbered differently (IN 0x82, OUT 0x01). Read 23 KB/s, write test OK |
 
-The Y-E Data and NEC were tested as CB only (before the interrupt transfer fix); they declare CBI like the TEAC.
+The Y-E Data was also tested as CBI (ESP32-S3: read 26 KB/s, write test OK). The NEC was tested as CB only (before
+the interrupt transfer fix); it declares CBI like the others.
 
 Tested on:
 
