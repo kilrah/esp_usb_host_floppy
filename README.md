@@ -8,7 +8,7 @@ On top of sector access it gives what's floppy-specific: the formattable capacit
 disk change detection, low-level formatting, and a FAT12 file system through ESP-IDF FatFs and the VFS, with a
 cylinder cache that makes it reasonably fast.
 
-It requires ESP-IDF >= 6.0 and the `espressif/usb` component. Tested on ESP32-P4 and ESP32-S3 with three
+It requires ESP-IDF >= 6.0 and the `espressif/usb` component. Tested on ESP32-P4, ESP32-S3 and ESP32-S31 with three
 drives (see [Tested hardware](#tested-hardware)).
 
 ## Installation
@@ -189,6 +189,8 @@ Tested on:
   write-protected disk (writes fail with `EACCES`), and a different disk (its own label, files and free space).
   A disk pulled out during a write: the drive reported a write fault (03/03/00) and that update was lost, as
   expected; the volume was consistent afterwards.
+- ESP32-S31 (rev 0.0, ESP-IDF 6.1, where it is a preview target: `idf.py --preview`), NEC plugged in directly,
+  with and without the forcing: CBI with interrupts, reading (28 KB/s) and writing.
 
 ## Limitations / TODO
 
